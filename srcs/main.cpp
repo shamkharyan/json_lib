@@ -5,7 +5,8 @@ int main()
 {
     json::value json = json::object(
         {
-            {"string", "hi"},
+            {"Hello! 😊", "hi"},
+            {"true", nullptr},
             {"number", 2.5},
             {"boolean", true},
             {"null_object", nullptr},
@@ -15,15 +16,17 @@ int main()
                     {"age", 24}
                 }
             )},
-            {"array", json::array({1,2,3,4})}
+            {"array", json::array({1,2.01,3,4})}
         }
     );
 
-    json["esh"] = json::object({
-        {"good esh", "42"},
-        {"ezopos", false}
+    json["new val"] = json::object({
+        {"val", "42"},
+        {"second val", false}
     });
-    json["esh"] = nullptr;
 
-    std::cout << json::to_string(json) << '\n';
+    json = json::array({1,2,3,4});
+    std::cout << json.to_string() << '\n';
+
+    json.to_file("fafay.json");
 }

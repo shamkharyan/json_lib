@@ -1,4 +1,11 @@
 #include "value.hpp"
+#include <algorithm>
+#include <string>
+#include <variant>
+#include <fstream>
+#include <sstream>
+
+static void to_string_recursive(const json::value& val, std::string& json);
 
 //operator[] for array
 typename json::value& json::value::operator[](std::size_t i)
@@ -102,18 +109,57 @@ const std::string& json::value::as_string() const
 	throw json::json_value_error("Value type is not string");
 }
 
-double json::value::as_number() const
+double& json::value::as_number()
 {
 	if (std::holds_alternative<double>(m_value))
 		return std::get<double>(m_value);
 	throw json::json_value_error("Value type is not number");
 }
 
-bool json::value::as_bool() const
+const double& json::value::as_number() const
+{
+	if (std::holds_alternative<double>(m_value))
+		return std::get<double>(m_value);
+	throw json::json_value_error("Value type is not number");
+}
+
+bool& json::value::as_bool()
 {
 	if (std::holds_alternative<bool>(m_value))
 		return std::get<bool>(m_value);
 	throw json::json_value_error("Value type is not boolean");
+}
+
+const bool& json::value::as_bool() const
+{
+	if (std::holds_alternative<bool>(m_value))
+		return std::get<bool>(m_value);
+	throw json::json_value_error("Value type is not boolean");
+}
+
+std::string json::value::to_string() const
+{
+	std::string str;
+	to_string_recursive(*this, str);
+	return str;
+}
+
+void json::value::to_file(const std::string& path) const
+{
+	std::string str;
+	std::ofstream f(path);
+	to_string_recursive(*this, str);
+	f << str;
+	f.close();
+}
+
+void json::value::to_file(const char* path) const
+{
+	std::string str;
+	std::ofstream f(path);
+	to_string_recursive(*this, str);
+	f << str;
+	f.close();
 }
 
 json::value json::object(std::initializer_list<std::pair<const std::string, json::value>> init)
@@ -128,7 +174,7 @@ json::value json::array(std::initializer_list<json::value> init)
 	return json::value(jarray(init));
 }
 
-static void to_string_recursive(const json::value& val, std::string& json)
+void to_string_recursive(const json::value& val, std::string& json)
 {
 	if (val.is_null())
 		json += "null";
@@ -168,11 +214,4 @@ static void to_string_recursive(const json::value& val, std::string& json)
 		}
 		json.back() = '}';
 	}
-}
-
-std::string json::to_string(const json::value& val)
-{
-	std::string str;
-	to_string_recursive(val, str);
-	return str;
 }

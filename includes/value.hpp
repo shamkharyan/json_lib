@@ -59,13 +59,22 @@ namespace json
 
 		jarray& as_array();
 		const jarray& as_array() const;
+
 		jobject& as_object();
 		const jobject& as_object() const;
+
 		std::string& as_string();
 		const std::string& as_string() const;
-		double as_number() const;
-		bool as_bool() const;
 
+		double& as_number();
+		const double& as_number() const;
+
+		bool& as_bool();
+		const bool& as_bool() const;
+
+		std::string to_string() const;
+		void to_file(const std::string& path) const;
+		void to_file(const char* path) const;
 	private:
 		std::variant<
 			jobject,
@@ -86,8 +95,9 @@ namespace json
 
 	value object(std::initializer_list<std::pair<const std::string, value>> init);
 	value array(std::initializer_list<value> init);
-
-	std::string to_string(const value& val);
+	value from_string(const std::string& json);
+	value from_file(const std::string& path);
+	value from_file(const char* path);
 }
 
 #endif // JSON_VALUE_HPP_
