@@ -1,4 +1,6 @@
-#include "json_lib.hpp"
+#include "json_parsing.hpp"
+#include "json_value.hpp"
+#include "json_exceptions.hpp"
 #include <stack>
 #include <sstream>
 #include <unordered_map>
@@ -14,6 +16,80 @@ namespace json
 	static std::vector<std::string> tokenize(const std::string& json);
 	static void validate_tokens(const std::vector<std::string>& tokens);
 	static void from_valid_tokens(json::value& val, const std::vector<std::string>& tokens, std::size_t& i);
+
+	json::value from_string(const std::string& json)
+	{
+		std::vector<std::string> tokens = tokenize(json);
+
+		validate_tokens(tokens); //if invalid tokens, throws an exception
+
+		json::value val;
+		std::size_t i = 0;
+
+		from_valid_tokens(val, tokens, i);
+
+		return val;
+	}
+
+	json::value from_file(const std::string& path)
+	{
+		std::ifstream file(path, std::ios::binary);
+		std::string json;
+
+		if (!file.is_open())
+			throw json_parse_error("Failed to read from: " + path);
+
+		file.seekg(0, std::ios::end);
+		std::size_t len = file.tellg();
+		file.seekg(0, std::ios::beg);
+
+		json.reserve(len);
+
+		constexpr std::size_t buff_size = 1024;
+		char buff[buff_size];
+
+		while (file.read(buff, buff_size))
+			json.append(buff, file.gcount());
+		json.append(buff, file.gcount());
+
+		if (file.bad())
+			throw json_parse_error("Error reading file: " + path);
+
+		if (json.empty())
+			throw json_parse_error("Empty file: " + path);
+		
+		return from_string(json);
+	}
+
+	json::value from_file(const char *path)
+	{
+		std::ifstream file(path, std::ios::binary);
+		std::string json;
+
+		if (!file.is_open())
+			throw json_parse_error("Failed to read from: " + std::string(path));
+
+		file.seekg(0, std::ios::end);
+		std::size_t len = file.tellg();
+		file.seekg(0, std::ios::beg);
+
+		json.reserve(len);
+
+		constexpr std::size_t buff_size = 1024;
+		char buff[buff_size];
+
+		while (file.read(buff, buff_size))
+			json.append(buff, file.gcount());
+		json.append(buff, file.gcount());
+
+		if (file.bad())
+			throw json_parse_error("Error reading file: " + std::string(path));
+
+		if (json.empty())
+			throw json_parse_error("Empty file: " + std::string(path));
+		
+		return from_string(json);
+	}
 
 	bool is_sep(char c)
 	{
@@ -213,16 +289,6 @@ namespace json
 			throw json::json_parse_error("Brackets mismatch");
 	}
 
-	// {    -> key, } +
-	// }    -> }, ], ,, EOF
-	// key  -> : 
-	// :    -> val, [, {
-	// val  -> ,, ], }
-	// [    -> [, {, val, ]
-	// ]    -> ], }, ,, EOF
-	// ,    -> key (in obj), val (in arr)
-	// strt -> {, [, val
-
 	void from_valid_tokens(json::value& val, const std::vector<std::string>& tokens, std::size_t& i)
 	{
 		if (is_null_str(tokens[i]))
@@ -273,79 +339,5 @@ namespace json
 			++i; //skip ]
 			val = temp_arr;
 		}
-	}
-
-	json::value from_string(const std::string& json)
-	{
-		std::vector<std::string> tokens = tokenize(json);
-
-		validate_tokens(tokens); //if invalid tokens, throws an exception
-
-		json::value val;
-		std::size_t i = 0;
-
-		from_valid_tokens(val, tokens, i);
-
-		return val;
-	}
-
-	json::value from_file(const std::string& path)
-	{
-		std::ifstream file(path, std::ios::binary);
-		std::string json;
-
-		if (!file.is_open())
-			throw json_parse_error("Failed to read from: " + path);
-
-		file.seekg(0, std::ios::end);
-		std::size_t len = file.tellg();
-		file.seekg(0, std::ios::beg);
-
-		json.reserve(len);
-
-		constexpr std::size_t buff_size = 1024;
-		char buff[buff_size];
-
-		while (file.read(buff, buff_size))
-			json.append(buff, file.gcount());
-		json.append(buff, file.gcount());
-
-		if (file.bad())
-			throw json_parse_error("Error reading file: " + path);
-
-		if (json.empty())
-			throw json_parse_error("Empty file: " + path);
-		
-		return from_string(json);
-	}
-
-	json::value from_file(const char *path)
-	{
-		std::ifstream file(path, std::ios::binary);
-		std::string json;
-
-		if (!file.is_open())
-			throw json_parse_error("Failed to read from: " + std::string(path));
-
-		file.seekg(0, std::ios::end);
-		std::size_t len = file.tellg();
-		file.seekg(0, std::ios::beg);
-
-		json.reserve(len);
-
-		constexpr std::size_t buff_size = 1024;
-		char buff[buff_size];
-
-		while (file.read(buff, buff_size))
-			json.append(buff, file.gcount());
-		json.append(buff, file.gcount());
-
-		if (file.bad())
-			throw json_parse_error("Error reading file: " + std::string(path));
-
-		if (json.empty())
-			throw json_parse_error("Empty file: " + std::string(path));
-		
-		return from_string(json);
 	}
 }

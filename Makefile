@@ -7,9 +7,10 @@ SRCS_PATH = srcs/
 INCS_PATH = includes/
 
 SRCS = \
-	$(SRCS_PATH)value.cpp \
 	$(SRCS_PATH)main.cpp \
-	$(SRCS_PATH)parsing.cpp \
+	$(SRCS_PATH)json_value.cpp \
+	$(SRCS_PATH)json_parsing.cpp \
+	$(SRCS_PATH)json_serialization.cpp \
 	
 OBJS = $(SRCS:.cpp=.o)
 

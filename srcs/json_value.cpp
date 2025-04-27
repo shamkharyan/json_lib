@@ -1,11 +1,11 @@
-#include "json_lib.hpp"
+#include "json_value.hpp"
+#include "json_exceptions.hpp"
+#include "json_serialization.hpp"
 #include <algorithm>
 #include <string>
 #include <variant>
 #include <fstream>
 #include <sstream>
-
-static void to_string_recursive(const json::value& val, std::string& json);
 
 //operator[] for array
 typename json::value& json::value::operator[](std::size_t i)
@@ -139,27 +139,29 @@ const bool& json::value::as_bool() const
 
 std::string json::value::to_string() const
 {
-	std::string str;
-	to_string_recursive(*this, str);
-	return str;
+	return json::to_string(*this);
 }
 
 void json::value::to_file(const std::string& path) const
 {
-	std::string str;
-	std::ofstream f(path);
-	to_string_recursive(*this, str);
-	f << str;
-	f.close();
+	std::ofstream file(path);
+
+	if (!file.is_open())
+		throw json::json_parse_error("Can't open file to serialize");
+	
+	file << json::to_string(*this);
+	file.close();
 }
 
 void json::value::to_file(const char* path) const
 {
-	std::string str;
-	std::ofstream f(path);
-	to_string_recursive(*this, str);
-	f << str;
-	f.close();
+	std::ofstream file(path);
+
+	if (!file.is_open())
+		throw json::json_parse_error("Can't open file to serialize");
+	
+	file << json::to_string(*this);
+	file.close();
 }
 
 json::value json::object(std::initializer_list<std::pair<const std::string, json::value>> init)
@@ -172,52 +174,4 @@ json::value json::array(std::initializer_list<json::value> init)
 {
 	using jarray = std::vector<json::value>;
 	return json::value(jarray(init));
-}
-
-void to_string_recursive(const json::value& val, std::string& json)
-{
-	if (val.is_null())
-		json += "null";
-	else if (val.is_bool())
-		json += val.as_bool()? "true" : "false";
-	else if (val.is_string())
-	{
-		json.push_back('"');
-		json += val.as_string();
-		json.push_back('"');
-	}
-	else if (val.is_number())
-	{
-		std::string n = std::to_string(val.as_number());
-		n.erase(n.find_last_not_of('0') + 1, std::string::npos);
-		n.erase(n.find_last_not_of('.') + 1, std::string::npos);
-		json += n;
-	}
-	else if (val.is_array())
-	{
-		json.push_back('[');
-		for (const json::value& v : val.as_array())
-		{
-			to_string_recursive(v, json);
-			json.push_back(',');
-		}
-		if (json.back() == ',')
-			json.back() = ']';
-		else
-			json.push_back(']');
-	}
-	else if (val.is_object())
-	{
-		json.push_back('{');
-		for (const auto& v : val.as_object())
-		{
-			json += "\"" + v.first + "\":";
-			to_string_recursive(v.second, json);
-			json.push_back(',');
-		}
-		if (json.back() == ',')
-			json.back() = '}';
-		else
-			json.push_back('}');
-	}
 }
