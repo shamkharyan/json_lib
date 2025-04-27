@@ -23,25 +23,6 @@ namespace json
         	c == ':' || c == ',';
 	}
 
-	bool check_brackets(std::stack<char>& st, char c)
-	{
-		if (c == '{' || c == '[')
-			st.push(c);
-		else if (c == '}')
-		{
-			if (st.empty() || st.top() != '{')
-				return false;
-			st.pop();
-		}
-		else if (c == ']')
-		{
-			if (st.empty() || st.top() != '[')
-				return false;
-			st.pop();
-		}
-		return true;
-	}
-
 	bool is_null_str(const std::string& json)
 	{
 		return json == "null";
