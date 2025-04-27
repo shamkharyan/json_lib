@@ -9,6 +9,7 @@ INCS_PATH = includes/
 SRCS = \
 	$(SRCS_PATH)value.cpp \
 	$(SRCS_PATH)main.cpp \
+	$(SRCS_PATH)parsing.cpp \
 	
 OBJS = $(SRCS:.cpp=.o)
 

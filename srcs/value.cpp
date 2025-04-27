@@ -1,4 +1,4 @@
-#include "value.hpp"
+#include "json_lib.hpp"
 #include <algorithm>
 #include <string>
 #include <variant>
@@ -201,7 +201,10 @@ void to_string_recursive(const json::value& val, std::string& json)
 			to_string_recursive(v, json);
 			json.push_back(',');
 		}
-		json.back() = ']';
+		if (json.back() == ',')
+			json.back() = ']';
+		else
+			json.push_back(']');
 	}
 	else if (val.is_object())
 	{
@@ -212,6 +215,9 @@ void to_string_recursive(const json::value& val, std::string& json)
 			to_string_recursive(v.second, json);
 			json.push_back(',');
 		}
-		json.back() = '}';
+		if (json.back() == ',')
+			json.back() = '}';
+		else
+			json.push_back('}');
 	}
 }

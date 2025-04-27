@@ -1,11 +1,19 @@
-#include "value.hpp"
+#include "json_lib.hpp"
 #include <stack>
 #include <sstream>
 #include <unordered_map>
 
 namespace json
 {
-	static bool is_sep(char c)
+	static bool is_sep(char c);
+	static std::vector<std::string> tokenize(const std::string& json);
+	static bool is_null_str(const std::string& json);
+	static bool is_bool_str(const std::string& json);
+	static bool is_string_str(const std::string& json);
+	static bool is_num_str(const std::string& json);
+	static void from_valid_tokens(json::value& val, const std::vector<std::string>& tokens, std::size_t& i);
+
+	bool is_sep(char c)
 	{
     	return
         	c == '{' || c == '}' || 
@@ -13,7 +21,7 @@ namespace json
         	c == ':' || c == ',';
 	}
 
-	static std::vector<std::string> tokenize(const std::string& json)
+	std::vector<std::string> tokenize(const std::string& json)
 	{
 		std::vector<std::string> tokens;
 		std::size_t i = 0;
@@ -42,22 +50,22 @@ namespace json
 		return tokens;
 	}
 
-	static bool is_null_str(const std::string& json)
+	bool is_null_str(const std::string& json)
 	{
 		return json == "null";
 	}
 
-	static bool is_bool_str(const std::string& json)
+	bool is_bool_str(const std::string& json)
 	{
 		return json == "true" || json == "false";
 	}
 
-	static bool is_string_str(const std::string& json)
+	bool is_string_str(const std::string& json)
 	{
 		return json.front() == '\"' && json.back() == '\"';
 	}
 
-	static bool is_num_str(const std::string& json)
+	bool is_num_str(const std::string& json)
 	{
 		std::stringstream ss(json);
 		std::string remain;
@@ -71,11 +79,6 @@ namespace json
 		return false;
 	}
 
-
-	// -1 -> delim
-	// 0  -> key
-	// 1  -> val
-
 	// {    -> key, } +
 	// }    -> }, ], ,, EOF
 	// key  -> : 
@@ -85,109 +88,68 @@ namespace json
 	// ]    -> ], }, ,, EOF
 	// ,    -> key (in obj), val (in arr)
 	// strt -> {, [, val
-	void from_string_help(value& val, const std::vector<std::string>& tokens, std::size_t i, int dkv, bool in_arr)
+
+	void from_valid_tokens(json::value& val, const std::vector<std::string>& tokens, std::size_t& i)
 	{
 		if (is_null_str(tokens[i]))
 		{
-			if (dkv == 1)
-				val = nullptr;
-			else
-				throw json::json_value_error("Key can\'t be null");
+			val = nullptr;
+			++i;
 		}
 		else if (is_bool_str(tokens[i]))
 		{
-			if (dkv == 1)
-				val = (tokens[i] == "true");
-			else
-				throw json::json_value_error("Key can\'t be bool");
+			val = (tokens[i] == "true");
+			++i;
 		}
 		else if (is_num_str(tokens[i]))
 		{
-			if (dkv == 1)
-				val = std::stod(tokens[i]);
-			else
-				throw json::json_value_error("Key can\'t be number");
+			val = std::stod(tokens[i]);
+			++i;
 		}
 		else if (is_string_str(tokens[i]))
 		{
-			if (dkv == 1)
-				val = tokens[i];
-			else if (dkv == 0)
-				from_string_help(val[tokens[i]], tokens, i + 1, -1, in_arr);
-			else
-				throw json::json_value_error("Key can\'t be number");
+			val = tokens[i].substr(1, tokens[i].size() - 2); //remove quotes
+			++i;
 		}
 		else if (tokens[i] == "{")
 		{
-			if (dkv == 1)
-				from_string_help(val, tokens, i + 1, 0, in_arr);
-			else
-				throw json::json_value_error("Key can\'t be number");
+			json::value temp = json::object({});
+			++i; //skip {
+			while (tokens[i] != "}")
+			{
+				std::string key = tokens[i].substr(1, tokens[i].size() - 2); //remove quotes
+				i += 2; //skip key and :
+				from_valid_tokens(temp[key], tokens, i);
+				if (tokens[i] == ",") ++i; //skip , if available
+			}
+			++i; //skip }
+			val = temp;
 		}
 		else if (tokens[i] == "[")
 		{
-			if (dkv == 1)
-				from_string_help(val, tokens, i + 1, 1, true);
-			else
-				throw json::json_value_error("Key can\'t be number");
+			json::value temp_arr = json::array({});
+			++i; //skip [
+			while (tokens[i] != "]")
+			{
+				json::value temp_val;
+				from_valid_tokens(temp_val, tokens, i);
+				temp_arr.as_array().push_back(temp_val);
+				if (tokens[i] == ",") ++i; //skip ,
+			}
+			++i; //skip ]
+			val = temp_arr;
 		}
-		else if (tokens[i] == ",")
-		{
-			if (dkv == -1 && in_arr)
-				from_string_help(val, tokens, i + 1, 1, in_arr);
-			else if (dkv == -1 && !in_arr)
-				from_string_help(val, tokens, i + 1, 0, in_arr);
-			else
-				throw json::json_value_error("Key can\'t be number");
-		}
-
-		
 	}
 
-	static bool validate(const std::vector<std::string>& tokens)
-	{
-		std::stack<char> brackets;
-		bool is_key = false;
-		bool in_arr = false;
-		char c = 's';
-		std::unordered_map<char, std::string> expected = {
-			{'{', "k}"},
-			{'}', "}],e"},
-			{'k', ":"},
-			{':', "v[{"},
-			{'v', ",]}"},
-			{'[', "[{v]"},
-			{']', "]},e"},
-			{',', "kv"},
-			{'s', "{[v"}
-		};
-
-		if (tokens.empty())
-			return false;
-	}
-
-	value from_string(const std::string& json)
+	json::value from_string(const std::string& json)
 	{
 		std::vector<std::string> tokens = tokenize(json);
-		std::stack<char> brackets;
-		
-		std::unordered_map<char, std::string> expected = {
-			{'{', "k}"},
-			{'}', "}],e"},
-			{'k', ":"},
-			{':', "v[{"},
-			{'v', ",]}"},
-			{'[', "[{v]"},
-			{']', "]},e"},
-			{',', "kv"},
-			{'s', "{[v"}
-		};
 
+		json::value val;
+		std::size_t i = 0;
 
+		from_valid_tokens(val, tokens, i);
 
-
-
-
-
+		return val;
 	}
 }
