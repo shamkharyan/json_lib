@@ -182,9 +182,9 @@ void to_string_recursive(const json::value& val, std::string& json)
 		json += val.as_bool()? "true" : "false";
 	else if (val.is_string())
 	{
-		json.push_back('\"');
+		json.push_back('"');
 		json += val.as_string();
-		json.push_back('\"');
+		json.push_back('"');
 	}
 	else if (val.is_number())
 	{
