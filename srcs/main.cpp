@@ -60,7 +60,8 @@ void test_invalid()
         {
             // Expected error
         }
-        catch (const std::exception& e) {
+        catch (const std::exception& e)
+        {
             std::cerr << "Unexpected exception type: " << e.what() << "\n";
             assert(false);
         }
@@ -72,8 +73,9 @@ void test_invalid()
 
 int main()
 {
-    test_valid();
-    test_invalid();
-    std::cout << "All tests completed successfully!\n";
+    json::value js1 = json::array({1,2,3,4,5});
+
+    js1.as_array().pop_back();
+    std::cout << js1.to_string() << '\n';
     return 0;
 }

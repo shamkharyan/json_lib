@@ -142,28 +142,6 @@ std::string json::value::to_string() const
 	return json::to_string(*this);
 }
 
-void json::value::to_file(const std::string& path) const
-{
-	std::ofstream file(path);
-
-	if (!file.is_open())
-		throw json::json_parse_error("Can't open file to serialize");
-	
-	file << json::to_string(*this);
-	file.close();
-}
-
-void json::value::to_file(const char* path) const
-{
-	std::ofstream file(path);
-
-	if (!file.is_open())
-		throw json::json_parse_error("Can't open file to serialize");
-	
-	file << json::to_string(*this);
-	file.close();
-}
-
 json::value json::object(std::initializer_list<std::pair<const std::string, json::value>> init)
 {
 	using jobject = std::unordered_map<std::string, json::value>;

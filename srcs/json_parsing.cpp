@@ -13,8 +13,8 @@ namespace json
 	static bool is_bool_str(const std::string& json);
 	static bool is_string_str(const std::string& json);
 	static bool is_num_str(const std::string& json);
-	static std::vector<std::string> tokenize(const std::string& json);
 	static void validate_tokens(const std::vector<std::string>& tokens);
+	static std::vector<std::string> tokenize(const std::string& json);
 	static void from_valid_tokens(json::value& val, const std::vector<std::string>& tokens, std::size_t& i);
 
 	json::value from_string(const std::string& json)
@@ -61,36 +61,6 @@ namespace json
 		return from_string(json);
 	}
 
-	json::value from_file(const char *path)
-	{
-		std::ifstream file(path, std::ios::binary);
-		std::string json;
-
-		if (!file.is_open())
-			throw json_parse_error("Failed to read from: " + std::string(path));
-
-		file.seekg(0, std::ios::end);
-		std::size_t len = file.tellg();
-		file.seekg(0, std::ios::beg);
-
-		json.reserve(len);
-
-		constexpr std::size_t buff_size = 1024;
-		char buff[buff_size];
-
-		while (file.read(buff, buff_size))
-			json.append(buff, file.gcount());
-		json.append(buff, file.gcount());
-
-		if (file.bad())
-			throw json_parse_error("Error reading file: " + std::string(path));
-
-		if (json.empty())
-			throw json_parse_error("Empty file: " + std::string(path));
-		
-		return from_string(json);
-	}
-
 	bool is_sep(char c)
 	{
     	return
@@ -132,7 +102,6 @@ namespace json
 	{
 		std::vector<std::string> tokens;
 		std::size_t i = 0;
-		std::stack<char> brackets;
 
 		while (i < json.size())
 		{
@@ -142,16 +111,16 @@ namespace json
 				tokens.emplace_back(1, json[i++]);
 			else if (json[i] == '"')
 			{
-				tokens.emplace_back(1, json[i++]);
+				tokens.emplace_back(1, json[i++]); //push_backs '"'
 				while (i < json.size() && (json[i] != '"' || json[i - 1] == '\\'))
 					tokens.back().push_back(json[i++]);
-				if (i < json.size())
-					tokens.back().push_back(json[i++]);
+				if (i < json.size()) //if json is valid, this is always true
+					tokens.back().push_back(json[i++]); //push_backs '"' 
 			}
 			else
 			{
 				tokens.emplace_back(1, json[i++]);
-				while (i < json.size() && !isspace(json[i]) && !is_sep(json[i]))
+				while (i < json.size() && !isspace(json[i]) && !is_sep(json[i]) && json[i] != '"')
 					tokens.back().push_back(json[i++]);
 			}
 		}
@@ -160,7 +129,7 @@ namespace json
 
 	void validate_tokens(const std::vector<std::string>& tokens)
 	{
-		std::stack<char> st;
+		std::stack<char> brackets;
 		bool expect_key = false;
 		bool expect_val = true;
 		bool in_arr = false;
@@ -175,7 +144,7 @@ namespace json
 			{
 				if (!expect_val)
 					throw json::json_parse_error("Token '{' in invalid place");
-				st.push('{');
+				brackets.push('{');
 				expect_key = true;
 				expect_val = false;
 				in_obj = true;
@@ -188,7 +157,7 @@ namespace json
 			{
 				if (!expect_val)
 					throw json::json_parse_error("Token '[' in invalid place");
-				st.push('[');
+				brackets.push('[');
 				expect_key = false;
 				expect_val = true;
 				in_obj = false;
@@ -199,13 +168,13 @@ namespace json
 			}
 			else if (token == "}")
 			{
-				if (st.empty() || st.top() != '{')
+				if (brackets.empty() || brackets.top() != '{')
 					throw json::json_parse_error("Token '}' in invalid place");
 				if (last == ',' || last == ':' || last == 'k')
 					throw json::json_parse_error("Trailing comma, ':' or key");
-				st.pop();
-				in_obj = (!st.empty() && st.top() == '{');
-				in_arr = (!st.empty() && st.top() == '[');
+				brackets.pop();
+				in_obj = (!brackets.empty() && brackets.top() == '{');
+				in_arr = (!brackets.empty() && brackets.top() == '[');
 				expect_comma = true;
 				expect_dots = false;
 				expect_key = in_obj;
@@ -214,13 +183,13 @@ namespace json
 			}
 			else if (token == "]")
 			{
-				if (st.empty() || st.top() != '[')
+				if (brackets.empty() || brackets.top() != '[')
 					throw json::json_parse_error("Token ']' in invalid place");
 				if (last == ',' || last == ':' || last == 'k')
 					throw json::json_parse_error("Trailing comma,':' or key");
-				st.pop();
-				in_obj = (!st.empty() && st.top() == '{');
-				in_arr = (!st.empty() && st.top() == '[');
+					brackets.pop();
+				in_obj = (!brackets.empty() && brackets.top() == '{');
+				in_arr = (!brackets.empty() && brackets.top() == '[');
 				expect_comma = true;
 				expect_dots = false;
 				expect_key = in_obj;
@@ -285,7 +254,7 @@ namespace json
     		throw json::json_parse_error("Expected value but reached end of input");
 		if (expect_dots)
 			throw json::json_parse_error("Expected ':' but reached end of input");
-		if (!st.empty())
+		if (!brackets.empty())
 			throw json::json_parse_error("Brackets mismatch");
 	}
 
@@ -334,7 +303,7 @@ namespace json
 				json::value temp_val;
 				from_valid_tokens(temp_val, tokens, i);
 				temp_arr.as_array().push_back(temp_val);
-				if (tokens[i] == ",") ++i; //skip ,
+				if (tokens[i] == ",") ++i; //skip , if available
 			}
 			++i; //skip ]
 			val = temp_arr;

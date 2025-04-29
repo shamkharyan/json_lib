@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <string>
 #include <variant>
-#include <optional>
 #include <vector>
 #include <unordered_map>
 
@@ -38,16 +37,16 @@ namespace json
 		value(const value& other) = default;
 		value(value&& other) = default;
 		value& operator=(const value& other) = default;
-		value& operator=(value&& other) = default;
+		value& operator=(value&& other) noexcept = default;
 
-		value& operator[](const std::string& key);
-		value& operator[](std::size_t i);
-		const value& operator[](std::size_t i) const;
+		value& operator[](const std::string& key); // only for arrays
+		value& operator[](std::size_t i); // only for arrays
+		const value& operator[](std::size_t i) const; // only for objects
 
-		value& at(const std::string& key);
-		const value& at(const std::string& key) const;
-		value& at(std::size_t i);
-		const value& at(std::size_t i) const;
+		value& at(const std::string& key); // only for objects
+		const value& at(const std::string& key) const; // only for objects
+		value& at(std::size_t i); // only for arrays
+		const value& at(std::size_t i) const; // only for arrays
 
 		bool is_number() const noexcept;
 		bool is_object() const noexcept;
@@ -72,8 +71,6 @@ namespace json
 		const bool& as_bool() const;
 
 		std::string to_string() const;
-		void to_file(const std::string& path) const;
-		void to_file(const char* path) const;
 
 	private:
 		std::variant<

@@ -8,7 +8,6 @@ namespace json
 {
 	json::value from_string(const std::string& json);
 	json::value from_file(const std::string& path);
-	json::value from_file(const char* path);
 }
 
 #endif // JSON_PARSING_HPP_

@@ -7,6 +7,7 @@
 namespace json
 {
 	std::string to_string(const value& val);
+	void to_file(const value& val, const std::string& path);
 }
 
 #endif // JSON_SERIALIZATION_HPP_

@@ -1,5 +1,7 @@
 #include "json_serialization.hpp"
 #include "json_value.hpp"
+#include "json_exceptions.hpp"
+#include <fstream>
 
 void to_string_recursive(const json::value& val, std::string& json);
 
@@ -8,6 +10,17 @@ std::string json::to_string(const json::value& val)
 	std::string json;
 	to_string_recursive(val, json);
 	return json;
+}
+
+void to_file(const json::value& val, const std::string& path)
+{
+	std::ofstream file(path);
+
+	if (!file.is_open())
+		throw json::json_parse_error("Can't open file to serialize");
+	
+	file << json::to_string(val);
+	file.close();
 }
 
 void to_string_recursive(const json::value& val, std::string& json)
