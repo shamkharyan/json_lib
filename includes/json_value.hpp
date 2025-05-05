@@ -1,6 +1,7 @@
 #ifndef JSON_VALUE_HPP_
 #define JSON_VALUE_HPP_
 
+#include "json_exceptions.hpp"
 #include <cstddef>
 #include <string>
 #include <variant>
@@ -11,10 +12,10 @@ namespace json
 {
 	class value
 	{
-	private:
+	public:
 		using jarray = std::vector<value>;
 		using jobject = std::unordered_map<std::string, value>;
-	public:
+
 		value() noexcept : m_value(nullptr) {}
 		value(std::nullptr_t) noexcept : m_value(nullptr) {}
 
@@ -48,12 +49,18 @@ namespace json
 		value& at(std::size_t i); // only for arrays
 		const value& at(std::size_t i) const; // only for arrays
 
+		void remove(const std::string& key); // only for objects
+		void remove(std::size_t i); // only for arrays
+
 		bool is_number() const noexcept;
 		bool is_object() const noexcept;
 		bool is_array() const noexcept;
 		bool is_string() const noexcept;
 		bool is_bool() const noexcept;
 		bool is_null() const noexcept;
+
+		template <typename T>
+		bool is() const noexcept;
 
 		jarray& as_array();
 		const jarray& as_array() const;
@@ -70,6 +77,12 @@ namespace json
 		bool& as_bool();
 		const bool& as_bool() const;
 
+		template <typename T>
+		T& as();
+
+		template <typename T>
+		const T& as() const;
+
 		std::string to_string() const;
 
 	private:
@@ -85,6 +98,25 @@ namespace json
 
 	value object(std::initializer_list<std::pair<const std::string, value>> init);
 	value array(std::initializer_list<value> init);
+}
+
+template <typename T>
+bool json::value::is() const noexcept { return std::holds_alternative<T>(m_value); }
+
+template <typename T>
+T& json::value::as()
+{
+	if (is<T>())
+		return std::get<T>(m_value);
+	throw json::json_value_error("Wrong value type");
+}
+
+template <typename T>
+const T& json::value::as() const
+{
+	if (is<T>())
+		return std::get<T>(m_value);
+	throw json::json_value_error("Wrong value type");
 }
 
 #endif // JSON_VALUE_HPP_

@@ -73,9 +73,10 @@ void test_invalid()
 
 int main()
 {
-    json::value js1 = json::array({1,2,3,4,5});
+    test_valid();
+    test_invalid();
 
-    js1.as_array().pop_back();
-    std::cout << js1.to_string() << '\n';
+    std::cout << "All tests are passed\n";
+    
     return 0;
 }

@@ -187,7 +187,7 @@ namespace json
 					throw json::json_parse_error("Token ']' in invalid place");
 				if (last == ',' || last == ':' || last == 'k')
 					throw json::json_parse_error("Trailing comma,':' or key");
-					brackets.pop();
+				brackets.pop();
 				in_obj = (!brackets.empty() && brackets.top() == '{');
 				in_arr = (!brackets.empty() && brackets.top() == '[');
 				expect_comma = true;
